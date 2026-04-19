@@ -1,73 +1,126 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './StadiumMap.css';
 
-const ZONES = [
-  { id: 'north', name: 'North Stand', className: 'stand-north' },
-  { id: 'south', name: 'South Stand', className: 'stand-south' },
-  { id: 'east', name: 'East Stand', className: 'stand-east' },
-  { id: 'west', name: 'West Stand', className: 'stand-west' },
+const WEMBLEY_CENTER = { lat: 51.5560, lng: -0.2796 };
+
+const STANDS = [
+  { id: 'north', name: 'North Stand', lat: 51.5567, lng: -0.2796 },
+  { id: 'south', name: 'South Stand', lat: 51.5553, lng: -0.2796 },
+  { id: 'east', name: 'East Stand', lat: 51.5560, lng: -0.2783 },
+  { id: 'west', name: 'West Stand', lat: 51.5560, lng: -0.2809 },
 ];
 
-export default function StadiumMap() {
-  const [densities, setDensities] = useState({
-    north: 'low',
-    south: 'med',
-    east: 'low',
-    west: 'high',
-  });
+export default function StadiumMap({ densities }) {
+  const mapRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const markersRef = useRef({});
 
-  // Simulate real-time crowd changes
+  // Initialize Map
   useEffect(() => {
-    const interval = setInterval(() => {
-      const statuses = ['low', 'med', 'high'];
-      setDensities(prev => {
-        const newDensities = { ...prev };
-        // Randomly change one zone's density
-        const keys = Object.keys(newDensities);
-        const randomZone = keys[Math.floor(Math.random() * keys.length)];
-        const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
-        newDensities[randomZone] = randomStatus;
-        return newDensities;
-      });
-    }, 5000);
+    if (!window.google || !mapRef.current) {
+      console.warn("Google Maps API not loaded. Ensure your API key is in .env");
+      return;
+    }
 
-    return () => clearInterval(interval);
+    if (!mapInstanceRef.current) {
+      // Dark mode map style
+      const darkMapStyle = [
+        { elementType: "geometry", stylers: [{ color: "#212121" }] },
+        { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+        { elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
+        { elementType: "labels.text.stroke", stylers: [{ color: "#212121" }] },
+        { featureType: "administrative", elementType: "geometry", stylers: [{ color: "#757575" }] },
+        { featureType: "administrative.country", elementType: "labels.text.fill", stylers: [{ color: "#9e9e9e" }] },
+        { featureType: "administrative.land_parcel", stylers: [{ visibility: "off" }] },
+        { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#bdbdbd" }] },
+        { featureType: "poi", elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
+        { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#181818" }] },
+        { featureType: "poi.park", elementType: "labels.text.fill", stylers: [{ color: "#616161" }] },
+        { featureType: "poi.park", elementType: "labels.text.stroke", stylers: [{ color: "#1b1b1b" }] },
+        { featureType: "road", elementType: "geometry.fill", stylers: [{ color: "#2c2c2c" }] },
+        { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#8a8a8a" }] },
+        { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#373737" }] },
+        { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#3c3c3c" }] },
+        { featureType: "road.highway.controlled_access", elementType: "geometry", stylers: [{ color: "#4e4e4e" }] },
+        { featureType: "road.local", elementType: "labels.text.fill", stylers: [{ color: "#616161" }] },
+        { featureType: "transit", elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
+        { featureType: "water", elementType: "geometry", stylers: [{ color: "#000000" }] },
+        { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#3d3d3d" }] }
+      ];
+
+      mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
+        center: WEMBLEY_CENTER,
+        zoom: 17,
+        styles: darkMapStyle,
+        disableDefaultUI: true,
+        zoomControl: true,
+      });
+
+      // Create initial markers
+      STANDS.forEach(stand => {
+        markersRef.current[stand.id] = new window.google.maps.Marker({
+          position: { lat: stand.lat, lng: stand.lng },
+          map: mapInstanceRef.current,
+          title: stand.name,
+          label: {
+            text: stand.name.split(' ')[0],
+            color: '#ffffff',
+            fontWeight: 'bold',
+            fontSize: '12px'
+          }
+        });
+      });
+    }
   }, []);
 
-  const getDensityClass = (status) => {
-    switch(status) {
-      case 'low': return 'density-low';
-      case 'med': return 'density-med';
-      case 'high': return 'density-high';
-      default: return 'density-low';
-    }
-  };
+  // Update Markers when densities change
+  useEffect(() => {
+    if (!window.google || !densities) return;
 
-  const getCapacityText = (status) => {
-    switch(status) {
-      case 'low': return '20% Full';
-      case 'med': return '65% Full';
-      case 'high': return '95% Full';
-      default: return '0% Full';
-    }
-  };
+    const getMarkerIcon = (density) => {
+      let fillColor = '#10b981'; // Green: Low (<40%)
+      if (density >= 70) fillColor = '#ef4444'; // Red: High (>70%)
+      else if (density >= 40) fillColor = '#f59e0b'; // Yellow: Medium (40-70%)
+
+      return {
+        path: window.google.maps.SymbolPath.CIRCLE,
+        fillColor: fillColor,
+        fillOpacity: 0.9,
+        strokeColor: '#ffffff',
+        strokeWeight: 2,
+        scale: 24, // Size of the marker
+      };
+    };
+
+    STANDS.forEach(stand => {
+      const marker = markersRef.current[stand.id];
+      if (marker && densities[stand.id] !== undefined) {
+        marker.setIcon(getMarkerIcon(densities[stand.id]));
+      }
+    });
+  }, [densities]);
 
   return (
-    <div className="stadium-wrapper">
-      <div className="stand stand-concourse"></div>
-      <div className="pitch"></div>
-      
-      {ZONES.map(zone => (
-        <div 
-          key={zone.id} 
-          className={`stand ${zone.className} ${getDensityClass(densities[zone.id])}`}
-        >
-          <div className="zone-label">
-            <span>{zone.name}</span>
-            <span className="zone-capacity">{getCapacityText(densities[zone.id])}</span>
-          </div>
+    <div className="map-wrapper" aria-label="Live Crowd Heatmap">
+      <div className="map-legend" role="complementary" aria-label="Map Legend">
+        <div className="legend-item"><span className="dot green" aria-hidden="true"></span> &lt; 40% (Low)</div>
+        <div className="legend-item"><span className="dot yellow" aria-hidden="true"></span> 40-70% (Med)</div>
+        <div className="legend-item"><span className="dot red" aria-hidden="true"></span> &gt; 70% (High)</div>
+      </div>
+      <div ref={mapRef} className="google-map-container" aria-hidden="true" />
+      {/* Fallback error message if map doesn't load */}
+      {!window.google && (
+        <div className="map-error" role="alert">
+          <p>Google Maps API failed to load.</p>
+          <p>Please check your .env API key configuration.</p>
         </div>
-      ))}
+      )}
     </div>
   );
 }
+
+import PropTypes from 'prop-types';
+
+StadiumMap.propTypes = {
+  densities: PropTypes.objectOf(PropTypes.number).isRequired
+};
