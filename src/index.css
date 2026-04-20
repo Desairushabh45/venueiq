@@ -84,19 +84,33 @@ body {
 .stadium-header {
   position: absolute;
   top: 20px;
-  text-align: center;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 10;
-  background: rgba(15, 23, 42, 0.7);
-  padding: 12px 24px;
+  background: rgba(15, 23, 42, 0.75);
+  padding: 10px 20px;
   border-radius: 30px;
   border: 1px solid rgba(255,255,255,0.1);
   backdrop-filter: blur(10px);
   box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  white-space: nowrap;
+}
+
+.stadium-header-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.stadium-title-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .stadium-header h1 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   font-weight: 700;
   background: linear-gradient(90deg, #fff, #94a3b8);
   -webkit-background-clip: text;
@@ -106,9 +120,10 @@ body {
 
 .stadium-header p {
   color: var(--text-secondary);
-  font-size: 0.85rem;
-  margin-top: 4px;
+  font-size: 0.8rem;
+  margin-top: 2px;
 }
+
 
 h2 {
   font-size: 1.25rem;

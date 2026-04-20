@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import './StadiumMap.css';
 
 const WEMBLEY_CENTER = { lat: 51.5560, lng: -0.2796 };
@@ -10,10 +11,11 @@ const STANDS = [
   { id: 'west', name: 'West Stand', lat: 51.5560, lng: -0.2809 },
 ];
 
-export default function StadiumMap({ densities }) {
+const StadiumMap = React.memo(({ densities, onZoneClick }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef({});
+  const listenersRef = useRef({});
 
   // Initialize Map
   useEffect(() => {
@@ -45,7 +47,7 @@ export default function StadiumMap({ densities }) {
         { featureType: "road.local", elementType: "labels.text.fill", stylers: [{ color: "#616161" }] },
         { featureType: "transit", elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
         { featureType: "water", elementType: "geometry", stylers: [{ color: "#000000" }] },
-        { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#3d3d3d" }] }
+        { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#3d3d3d" }] },
       ];
 
       mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
@@ -57,8 +59,8 @@ export default function StadiumMap({ densities }) {
       });
 
       // Create initial markers
-      STANDS.forEach(stand => {
-        markersRef.current[stand.id] = new window.google.maps.Marker({
+      STANDS.forEach((stand) => {
+        const marker = new window.google.maps.Marker({
           position: { lat: stand.lat, lng: stand.lng },
           map: mapInstanceRef.current,
           title: stand.name,
@@ -66,33 +68,53 @@ export default function StadiumMap({ densities }) {
             text: stand.name.split(' ')[0],
             color: '#ffffff',
             fontWeight: 'bold',
-            fontSize: '12px'
+            fontSize: '12px',
+          },
+          cursor: 'pointer',
+        });
+
+        markersRef.current[stand.id] = marker;
+
+        // Click listener → GA event via onZoneClick callback
+        listenersRef.current[stand.id] = marker.addListener('click', () => {
+          if (typeof onZoneClick === 'function') {
+            onZoneClick(stand.id);
           }
         });
       });
     }
+
+    // Cleanup listeners on unmount
+    return () => {
+      Object.values(listenersRef.current).forEach((listener) => {
+        if (listener && window.google) {
+          window.google.maps.event.removeListener(listener);
+        }
+      });
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Update Markers when densities change
+  const getMarkerIcon = useCallback((density) => {
+    let fillColor = '#10b981'; // Green: Low (<40%)
+    if (density >= 70) fillColor = '#ef4444'; // Red: High (>70%)
+    else if (density >= 40) fillColor = '#f59e0b'; // Yellow: Medium (40-70%)
+
+    return {
+      path: window.google?.maps?.SymbolPath?.CIRCLE || 0,
+      fillColor: fillColor,
+      fillOpacity: 0.9,
+      strokeColor: '#ffffff',
+      strokeWeight: 2,
+      scale: 24,
+    };
+  }, []);
+
   useEffect(() => {
     if (!window.google || !densities) return;
 
-    const getMarkerIcon = (density) => {
-      let fillColor = '#10b981'; // Green: Low (<40%)
-      if (density >= 70) fillColor = '#ef4444'; // Red: High (>70%)
-      else if (density >= 40) fillColor = '#f59e0b'; // Yellow: Medium (40-70%)
-
-      return {
-        path: window.google.maps.SymbolPath.CIRCLE,
-        fillColor: fillColor,
-        fillOpacity: 0.9,
-        strokeColor: '#ffffff',
-        strokeWeight: 2,
-        scale: 24, // Size of the marker
-      };
-    };
-
-    STANDS.forEach(stand => {
+    STANDS.forEach((stand) => {
       const marker = markersRef.current[stand.id];
       if (marker && densities[stand.id] !== undefined) {
         marker.setIcon(getMarkerIcon(densities[stand.id]));
@@ -117,10 +139,17 @@ export default function StadiumMap({ densities }) {
       )}
     </div>
   );
-}
-
-import PropTypes from 'prop-types';
+});
 
 StadiumMap.propTypes = {
-  densities: PropTypes.objectOf(PropTypes.number).isRequired
+  densities: PropTypes.objectOf(PropTypes.number).isRequired,
+  onZoneClick: PropTypes.func,
 };
+
+StadiumMap.defaultProps = {
+  onZoneClick: null,
+};
+
+StadiumMap.displayName = 'StadiumMap';
+
+export default StadiumMap;

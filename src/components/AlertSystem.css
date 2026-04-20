@@ -75,3 +75,113 @@
   align-items: center;
   gap: 10px;
 }
+
+/* ── Alert system wrapper ─────────────────────────────────────────────────── */
+.alert-system-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+/* ── Admin Post Alert Form ────────────────────────────────────────────────── */
+.post-alert-form {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(245, 158, 11, 0.05);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.post-alert-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.admin-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #f59e0b;
+}
+
+.post-alert-select {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.post-alert-select:focus {
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+.post-alert-input,
+.post-alert-textarea {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-size: 0.85rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+  resize: none;
+}
+
+.post-alert-input::placeholder,
+.post-alert-textarea::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.post-alert-input:focus,
+.post-alert-textarea:focus {
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+.post-alert-success {
+  font-size: 0.8rem;
+  color: #10b981;
+  font-weight: 600;
+  text-align: center;
+}
+
+.post-alert-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.post-alert-btn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.post-alert-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

@@ -1,0 +1,14 @@
+{
+  "rules": {
+    ".read": "true",
+    "alerts": {
+      ".write": "auth != null"
+    },
+    "queues": {
+      ".write": "auth != null && auth.token.email === 'rushabhdesai78@gmail.com'"
+    },
+    "densities": {
+      ".write": "auth != null && auth.token.email === 'rushabhdesai78@gmail.com'"
+    }
+  }
+}
